@@ -16,3 +16,22 @@ app = FastAPI(title="Webhook & Payment Reconciler")
 
 
 def get_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db() -> None:
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS webhook_events (
+            idempotency_key TEXT PRIMARY KEY,
+            tx_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            event_time TEXT NOT NULL,
+            payload_json TEXT NOT NULL,
+            received_at TEXT NOT NULL
+        )
+        """
