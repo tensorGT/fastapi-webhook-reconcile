@@ -35,3 +35,22 @@ def init_db() -> None:
             received_at TEXT NOT NULL
         )
         """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ledger_entries (
+            tx_id TEXT PRIMARY KEY,
+            amount_cents INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            status TEXT NOT NULL,
+            last_event_time TEXT NOT NULL
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT NOT NULL,
+            detail TEXT NOT NULL,
+            created_at TEXT NOT NULL
