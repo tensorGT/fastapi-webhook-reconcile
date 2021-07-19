@@ -54,3 +54,22 @@ def init_db() -> None:
             action TEXT NOT NULL,
             detail TEXT NOT NULL,
             created_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+def log_audit(conn: sqlite3.Connection, action: str, detail: str) -> None:
+    conn.execute(
+        "INSERT INTO audit_logs (action, detail, created_at) VALUES (?, ?, ?)",
+        (action, detail, datetime.utcnow().isoformat()),
+    )
+
+
+def verify_sig(raw_body: bytes, sig_header: Optional[str]) -> bool:
+    if not sig_header:
