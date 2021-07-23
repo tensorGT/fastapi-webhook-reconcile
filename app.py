@@ -73,3 +73,22 @@ def log_audit(conn: sqlite3.Connection, action: str, detail: str) -> None:
 
 def verify_sig(raw_body: bytes, sig_header: Optional[str]) -> bool:
     if not sig_header:
+        return False
+    expected = hmac.new(WEBHOOK_SECRET.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, sig_header.strip())
+
+
+class SettlementItem(BaseModel):
+    tx_id: str
+    settled_cents: int
+    currency: str = "USD"
+
+
+class ReconcileRequest(BaseModel):
+    settlements: List[SettlementItem]
+
+
+@app.post("/webhooks/payment")
+async def ingest_webhook(
+    request: Request,
+    x_signature: Optional[str] = Header(None),
