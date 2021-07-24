@@ -92,3 +92,22 @@ class ReconcileRequest(BaseModel):
 async def ingest_webhook(
     request: Request,
     x_signature: Optional[str] = Header(None),
+    idempotency_key: Optional[str] = Header(None),
+) -> Dict:
+    raw = await request.body()
+    if not verify_sig(raw, x_signature):
+        raise HTTPException(status_code=401, detail="invalid webhook signature")
+    if not idempotency_key:
+        raise HTTPException(status_code=400, detail="missing Idempotency-Key header")
+
+    payload = json.loads(raw.decode("utf-8"))
+    tx_id = payload["tx_id"]
+    event_type = payload["event_type"]
+    event_time = payload["event_time"]
+    amount_cents = int(payload["amount_cents"])
+    currency = payload.get("currency", "USD")
+
+    conn = get_conn()
+    try:
+        existing = conn.execute(
+            "SELECT idempotency_key FROM webhook_events WHERE idempotency_key = ?",
