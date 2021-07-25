@@ -111,3 +111,22 @@ async def ingest_webhook(
     try:
         existing = conn.execute(
             "SELECT idempotency_key FROM webhook_events WHERE idempotency_key = ?",
+            (idempotency_key,),
+        ).fetchone()
+        if existing:
+            log_audit(conn, "duplicate_ignored", "key=%s tx=%s" % (idempotency_key, tx_id))
+            conn.commit()
+            return {"status": "duplicate_ignored", "idempotency_key": idempotency_key}
+
+        conn.execute(
+            """
+            INSERT INTO webhook_events (idempotency_key, tx_id, event_type, event_time, payload_json, received_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (idempotency_key, tx_id, event_type, event_time, raw.decode("utf-8"), datetime.utcnow().isoformat()),
+        )
+
+        # handle out-of-order events by comparing event_time
+        ledger = conn.execute(
+            "SELECT last_event_time, status FROM ledger_entries WHERE tx_id = ?", (tx_id,)
+        ).fetchone()
