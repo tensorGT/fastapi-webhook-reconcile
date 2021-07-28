@@ -8,3 +8,4 @@ small backend with FastAPI and SQLite for learn how payment webhooks, idempotenc
 - handle out-of-order events by comparing `event_time`
 - `/reconcile` endpoint to compare ledger rows against external settlement list
 - `/audit-logs` endpoint for see everything that happened
+

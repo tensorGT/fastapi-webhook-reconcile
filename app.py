@@ -130,3 +130,22 @@ async def ingest_webhook(
         ledger = conn.execute(
             "SELECT last_event_time, status FROM ledger_entries WHERE tx_id = ?", (tx_id,)
         ).fetchone()
+
+        if ledger is None:
+            conn.execute(
+                """
+                INSERT INTO ledger_entries (tx_id, amount_cents, currency, status, last_event_time)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (tx_id, amount_cents, currency, event_type, event_time),
+            )
+            log_audit(conn, "ledger_created", "tx=%s status=%s" % (tx_id, event_type))
+        elif event_time >= ledger["last_event_time"]:
+            conn.execute(
+                """
+                UPDATE ledger_entries SET amount_cents = ?, status = ?, last_event_time = ?
+                WHERE tx_id = ?
+                """,
+                (amount_cents, event_type, event_time, tx_id),
+            )
+            log_audit(conn, "ledger_updated", "tx=%s status=%s" % (tx_id, event_type))
