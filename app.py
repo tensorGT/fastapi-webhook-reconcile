@@ -149,3 +149,22 @@ async def ingest_webhook(
                 (amount_cents, event_type, event_time, tx_id),
             )
             log_audit(conn, "ledger_updated", "tx=%s status=%s" % (tx_id, event_type))
+        else:
+            log_audit(conn, "out_of_order_skipped", "tx=%s older event %s" % (tx_id, event_time))
+
+        conn.commit()
+        return {"status": "processed", "tx_id": tx_id}
+    finally:
+        conn.close()
+
+
+@app.post("/reconcile")
+def reconcile_payments(body: ReconcileRequest) -> Dict:
+    conn = get_conn()
+    try:
+        matched = []
+        mismatched = []
+        missing_in_ledger = []
+
+        for item in body.settlements:
+            row = conn.execute(

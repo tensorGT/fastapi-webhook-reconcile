@@ -9,3 +9,5 @@ small backend with FastAPI and SQLite for learn how payment webhooks, idempotenc
 - `/reconcile` endpoint to compare ledger rows against external settlement list
 - `/audit-logs` endpoint for see everything that happened
 
+## run
+```bash
