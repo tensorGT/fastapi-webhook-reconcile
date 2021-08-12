@@ -168,3 +168,22 @@ def reconcile_payments(body: ReconcileRequest) -> Dict:
 
         for item in body.settlements:
             row = conn.execute(
+                "SELECT amount_cents, status FROM ledger_entries WHERE tx_id = ?",
+                (item.tx_id,),
+            ).fetchone()
+            if row is None:
+                missing_in_ledger.append(item.tx_id)
+            elif int(row["amount_cents"]) == item.settled_cents:
+                matched.append(item.tx_id)
+            else:
+                mismatched.append(
+                    {"tx_id": item.tx_id, "ledger": row["amount_cents"], "settled": item.settled_cents}
+                )
+
+        log_audit(
+            conn,
+            "reconcile_run",
+            "matched=%d mismatched=%d missing=%d" % (len(matched), len(mismatched), len(missing_in_ledger)),
+        )
+        conn.commit()
+        return {
