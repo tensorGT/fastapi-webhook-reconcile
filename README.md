@@ -12,3 +12,5 @@ small backend with FastAPI and SQLite for learn how payment webhooks, idempotenc
 ## run
 ```bash
 pip install -r requirements.txt
+uvicorn app:app --reload
+```

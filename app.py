@@ -187,3 +187,22 @@ def reconcile_payments(body: ReconcileRequest) -> Dict:
         )
         conn.commit()
         return {
+            "matched": matched,
+            "mismatched": mismatched,
+            "missing_in_ledger": missing_in_ledger,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/audit-logs")
+def get_audit_logs(limit: int = 50) -> List[Dict]:
+    conn = get_conn()
+    try:
+        rows = conn.execute(
+            "SELECT id, action, detail, created_at FROM audit_logs ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
